@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Proxy Checker</string>
+    <string-array name="protocols_array">
+        <item>Автоопределение</item>
+        <item>HTTP</item>
+        <item>HTTPS</item>
+        <item>SOCKS4</item>
+        <item>SOCKS5</item>
+        <item>MTPROTO</item>
+    </string-array>
+</resources>

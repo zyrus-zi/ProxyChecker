@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Добро пожаловать!"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Чтобы приложение могло проверять прокси в фоне (когда вы его свернули) и присылать результаты, пожалуйста, выдайте разрешения ниже:"
+        android:textSize="16sp"
+        android:textAlignment="center"
+        android:layout_marginBottom="32dp"/>
+
+    <Button
+        android:id="@+id/btnNotifyPerm"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="1. Разрешить уведомления"
+        android:layout_marginBottom="12dp"/>
+
+    <Button
+        android:id="@+id/btnBatteryPerm"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="2. Работа в фоне (Батарея)"
+        android:layout_marginBottom="32dp"/>
+
+    <Button
+        android:id="@+id/btnContinue"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Продолжить"
+        android:backgroundTint="#4CAF50"
+        android:textColor="@android:color/white"/>
+
+</LinearLayout>
