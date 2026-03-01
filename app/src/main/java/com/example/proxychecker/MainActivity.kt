@@ -23,8 +23,35 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val prefs = getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+        val isDarkMode = prefs.getBoolean("isDarkTheme", true)
+
+        if (isDarkMode) {
+            androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES)
+        } else {
+            androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO)
+        }
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        binding.btnThemeToggle.setOnClickListener {
+            val currentNightMode = prefs.getBoolean("isDarkTheme", true)
+            val newMode = !currentNightMode
+            prefs.edit().putBoolean("isDarkTheme", newMode).apply()
+
+            if (newMode) {
+                androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES)
+            } else {
+                androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO)
+            }
+        }
+
+        val protocols = resources.getStringArray(R.array.protocols_array)
+        val arrayAdapter = android.widget.ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, protocols)
+        binding.spinnerProtocol.setAdapter(arrayAdapter)
+        binding.spinnerProtocol.setOnClickListener { binding.spinnerProtocol.showDropDown() }
 
         adapter = ProxyAdapter(ProxyManager.proxyList)
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
@@ -37,23 +64,31 @@ class MainActivity : AppCompatActivity() {
             val threads = binding.etThreads.text.toString().toIntOrNull() ?: 50
             val timeout = binding.etTimeout.text.toString().toIntOrNull() ?: 5000
 
-            val isAutoDetect = binding.spinnerProtocol.selectedItemPosition == 0
-            val forceProtocol = when (binding.spinnerProtocol.selectedItemPosition) {
-                1 -> ProxyProtocol.HTTP
-                2 -> ProxyProtocol.HTTPS
-                3 -> ProxyProtocol.SOCKS4
-                4 -> ProxyProtocol.SOCKS5
-                5 -> ProxyProtocol.MTPROTO
+            val selectedProtocolText = binding.spinnerProtocol.text.toString()
+            val forceProtocol = when (selectedProtocolText) {
+                "HTTP" -> ProxyProtocol.HTTP
+                "HTTPS" -> ProxyProtocol.HTTPS
+                "SOCKS4" -> ProxyProtocol.SOCKS4
+                "SOCKS5" -> ProxyProtocol.SOCKS5
+                "MTPROTO" -> ProxyProtocol.MTPROTO
                 else -> ProxyProtocol.UNKNOWN
             }
+            val isAutoDetect = forceProtocol == ProxyProtocol.UNKNOWN
 
-            // СБРОС ВЫДЕЛЕНИЯ ПРИ СТАРТЕ
             binding.cbSelectAll.isChecked = false
             ProxyManager.proxyList.forEach { it.isSelected = false }
-            adapter.notifyDataSetChanged()
 
             if (input.isNotEmpty()) {
+                // Если есть новый текст - очищаем и грузим новое
                 ProxyManager.proxyList.clear()
+                adapter.notifyDataSetChanged()
+            } else {
+                // Если текста нет - сбрасываем статус старых прокси для перепроверки
+                ProxyManager.proxyList.forEach {
+                    it.isAlive = false
+                    it.pingMs = -1
+                    it.country = "Unknown"
+                }
                 adapter.notifyDataSetChanged()
             }
 
@@ -67,53 +102,74 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        binding.btnPause.setOnClickListener {
-            ProxyManager.togglePause()
-        }
-
-        binding.btnStop.setOnClickListener {
-            ProxyManager.stopChecking(this)
-        }
+        binding.btnPause.setOnClickListener { ProxyManager.togglePause() }
+        binding.btnStop.setOnClickListener { ProxyManager.stopChecking(this) }
 
         binding.cbSelectAll.setOnCheckedChangeListener { _, isChecked ->
             ProxyManager.proxyList.forEach {
-                if (it.isAlive) {
-                    it.isSelected = isChecked
-                } else {
-                    it.isSelected = false
-                }
+                if (it.isAlive) it.isSelected = isChecked else it.isSelected = false
             }
             adapter.notifyDataSetChanged()
         }
 
+        // --- СОРТИРОВКА С ОБНОВЛЕНИЕМ СТРЕЛОЧЕК ---
         binding.headerPing.setOnClickListener {
-            if (sortPingAsc) ProxyManager.proxyList.sortBy { if (it.isAlive) it.pingMs else Long.MAX_VALUE }
-            else ProxyManager.proxyList.sortByDescending { if (it.isAlive) it.pingMs else -1L }
+            if (sortPingAsc) {
+                ProxyManager.proxyList.sortBy { if (it.isAlive) it.pingMs else Long.MAX_VALUE }
+                binding.headerPing.text = "Пинг ▲"
+            } else {
+                ProxyManager.proxyList.sortByDescending { if (it.isAlive) it.pingMs else -1L }
+                binding.headerPing.text = "Пинг ▼"
+            }
             sortPingAsc = !sortPingAsc
+
+            // Сброс остальных
+            binding.headerProtocol.text = "Тип ▼"
+            binding.headerCountry.text = "Страна ▼"
+
             adapter.notifyDataSetChanged()
         }
+
         binding.headerProtocol.setOnClickListener {
-            if (sortProtoAsc) ProxyManager.proxyList.sortBy { it.protocol.name }
-            else ProxyManager.proxyList.sortByDescending { it.protocol.name }
+            if (sortProtoAsc) {
+                ProxyManager.proxyList.sortBy { it.protocol.name }
+                binding.headerProtocol.text = "Тип ▲"
+            } else {
+                ProxyManager.proxyList.sortByDescending { it.protocol.name }
+                binding.headerProtocol.text = "Тип ▼"
+            }
             sortProtoAsc = !sortProtoAsc
+
+            binding.headerPing.text = "Пинг ▼"
+            binding.headerCountry.text = "Страна ▼"
+
             adapter.notifyDataSetChanged()
         }
+
         binding.headerCountry.setOnClickListener {
-            if (sortCountryAsc) ProxyManager.proxyList.sortBy { it.country }
-            else ProxyManager.proxyList.sortByDescending { it.country }
+            if (sortCountryAsc) {
+                ProxyManager.proxyList.sortBy { it.country }
+                binding.headerCountry.text = "Страна ▲"
+            } else {
+                ProxyManager.proxyList.sortByDescending { it.country }
+                binding.headerCountry.text = "Страна ▼"
+            }
             sortCountryAsc = !sortCountryAsc
+
+            binding.headerPing.text = "Пинг ▼"
+            binding.headerProtocol.text = "Тип ▼"
+
             adapter.notifyDataSetChanged()
         }
 
         binding.btnExportTxt.setOnClickListener {
             val aliveSelected = ProxyManager.proxyList.filter { it.isSelected && it.isAlive }
-
             if (aliveSelected.isEmpty()) {
                 Toast.makeText(this, "Нет выбранных живых прокси!", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            val sb = StringBuilder()
+            val sb = java.lang.StringBuilder()
             val grouped = aliveSelected.groupBy { it.protocol }
             for ((protocol, list) in grouped) {
                 sb.append("------- ${protocol.name} -------\n")
@@ -122,19 +178,35 @@ class MainActivity : AppCompatActivity() {
                 }
                 sb.append("\n")
             }
-
             val txt = sb.toString().trim()
 
-            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            clipboard.setPrimaryClip(ClipData.newPlainText("Proxies", txt))
-            Toast.makeText(this, "Скопировано в буфер обмена!", Toast.LENGTH_SHORT).show()
+            val bottomSheetDialog = com.google.android.material.bottomsheet.BottomSheetDialog(this)
+            val view = layoutInflater.inflate(R.layout.bottom_sheet_export, null)
+            bottomSheetDialog.setContentView(view)
 
-            val sendIntent = Intent().apply {
-                action = Intent.ACTION_SEND
-                putExtra(Intent.EXTRA_TEXT, txt)
-                type = "text/plain"
+            view.findViewById<android.widget.Button>(R.id.btnCopyTxt).setOnClickListener {
+                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                clipboard.setPrimaryClip(ClipData.newPlainText("Proxies", txt))
+                Toast.makeText(this, "Скопировано в буфер обмена!", Toast.LENGTH_SHORT).show()
+                bottomSheetDialog.dismiss()
             }
-            startActivity(Intent.createChooser(sendIntent, "Сохранить/Отправить прокси"))
+
+            view.findViewById<android.widget.Button>(R.id.btnShareTxt).setOnClickListener {
+                val sendIntent = Intent().apply {
+                    action = Intent.ACTION_SEND
+                    putExtra(Intent.EXTRA_TEXT, txt)
+                    type = "text/plain"
+                }
+                startActivity(Intent.createChooser(sendIntent, "Поделиться прокси"))
+                bottomSheetDialog.dismiss()
+            }
+
+            view.findViewById<android.widget.Button>(R.id.btnDownloadTxt).setOnClickListener {
+                saveTextToDownloads(txt)
+                bottomSheetDialog.dismiss()
+            }
+
+            bottomSheetDialog.show()
         }
 
         binding.btnExportTg.setOnClickListener {
@@ -151,6 +223,34 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun saveTextToDownloads(text: String) {
+        try {
+            val fileName = "Proxies_${System.currentTimeMillis()}.txt"
+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                val values = android.content.ContentValues().apply {
+                    put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                    put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "text/plain")
+                    put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS)
+                }
+                val uri = contentResolver.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                if (uri != null) {
+                    contentResolver.openOutputStream(uri)?.use {
+                        it.write(text.toByteArray())
+                    }
+                    Toast.makeText(this, "Файл сохранен в Загрузки", Toast.LENGTH_LONG).show()
+                }
+            } else {
+                val path = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+                val file = java.io.File(path, fileName)
+                file.writeText(text)
+                Toast.makeText(this, "Файл сохранен в Загрузки", Toast.LENGTH_LONG).show()
+            }
+        } catch (e: Exception) {
+            Toast.makeText(this, "Ошибка сохранения файла: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
     private fun observeManager() {
         lifecycleScope.launch {
             ProxyManager.stateFlow.collect { state ->
@@ -159,19 +259,19 @@ class MainActivity : AppCompatActivity() {
                         binding.btnStart.isEnabled = true
                         binding.btnPause.isEnabled = false
                         binding.btnStop.isEnabled = false
-                        binding.btnPause.text = "Пауза"
+                        binding.btnPause.setIconResource(R.drawable.ic_pause)
                     }
                     CheckerState.RUNNING -> {
                         binding.btnStart.isEnabled = false
                         binding.btnPause.isEnabled = true
                         binding.btnStop.isEnabled = true
-                        binding.btnPause.text = "Пауза"
+                        binding.btnPause.setIconResource(R.drawable.ic_pause)
                     }
                     CheckerState.PAUSED -> {
                         binding.btnStart.isEnabled = false
                         binding.btnPause.isEnabled = true
                         binding.btnStop.isEnabled = true
-                        binding.btnPause.text = "Продолжить"
+                        binding.btnPause.setIconResource(R.drawable.ic_play)
                     }
                 }
             }

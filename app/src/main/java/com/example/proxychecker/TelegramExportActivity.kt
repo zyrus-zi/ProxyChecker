@@ -6,18 +6,21 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
-import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.materialswitch.MaterialSwitch
 
 class TelegramExportActivity : AppCompatActivity() {
 
     private lateinit var etResult: EditText
-    private lateinit var cbIncludeCountry: CheckBox
-    private lateinit var cbIncludePing: CheckBox
-    private lateinit var cbGroupByProtocol: CheckBox
-    private lateinit var cbCompactView: CheckBox
+
+    // ИСПРАВЛЕНИЕ ЗДЕСЬ: CheckBox заменен на MaterialSwitch
+    private lateinit var cbIncludeCountry: MaterialSwitch
+    private lateinit var cbIncludePing: MaterialSwitch
+    private lateinit var cbGroupByProtocol: MaterialSwitch
+    private lateinit var cbCompactView: MaterialSwitch
 
     private val selectedProxies = ProxyManager.proxyList.filter {
         it.isSelected && it.isAlive && it.toTgLink().isNotEmpty()
@@ -27,9 +30,10 @@ class TelegramExportActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_telegram_export)
 
-        // ВКЛЮЧАЕМ КНОПКУ НАЗАД
+        // Инициализация красивого тулбара с кнопкой "Назад"
+        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.title = "Экспорт в Telegram"
 
         etResult = findViewById(R.id.etResult)
         cbIncludeCountry = findViewById(R.id.cbIncludeCountry)
@@ -66,7 +70,7 @@ class TelegramExportActivity : AppCompatActivity() {
         }
     }
 
-    // ОБРАБОТКА НАЖАТИЯ КНОПКИ НАЗАД
+    // ОБРАБОТКА НАЖАТИЯ КНОПКИ НАЗАД В ТУЛБАРЕ
     override fun onSupportNavigateUp(): Boolean {
         finish()
         return true

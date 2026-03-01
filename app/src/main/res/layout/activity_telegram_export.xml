@@ -3,89 +3,118 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:background="?android:attr/colorBackground">
 
-    <TextView
-        android:id="@+id/tvTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Экспорт ссылок Telegram"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"/>
-
-    <LinearLayout
-        android:id="@+id/layoutSettings"
+    <!-- Верхний Тулбар (Шапка экрана) -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/tvTitle">
+        android:background="@android:color/transparent"
+        app:elevation="0dp"
+        app:layout_constraintTop_toTopOf="parent">
 
-        <CheckBox
-            android:id="@+id/cbIncludeCountry"
-            android:layout_width="wrap_content"
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="Экспорт в Telegram"
+            app:titleTextColor="?attr/colorPrimary" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardSettings"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="8dp"
+        app:cardBackgroundColor="?attr/colorSurfaceVariant"
+        app:cardElevation="0dp"
+        app:layout_constraintTop_toBottomOf="@id/appBarLayout">
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Добавлять флаг и страну"
-            android:checked="true"/>
+            android:orientation="vertical"
+            android:padding="16dp">
 
-        <CheckBox
-            android:id="@+id/cbIncludePing"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Отображать пинг"
-            android:checked="false"/>
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/cbIncludeCountry"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Флаг и страна"
+                android:checked="true"/>
 
-        <CheckBox
-            android:id="@+id/cbGroupByProtocol"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Группировать по протоколу (С разделителями)"
-            android:checked="true"/>
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/cbIncludePing"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Отображать пинг"
+                android:checked="false"/>
 
-        <CheckBox
-            android:id="@+id/cbCompactView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Компактный вид (без пустых строк)"
-            android:checked="false"/>
-    </LinearLayout>
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/cbGroupByProtocol"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Группировать по протоколу"
+                android:checked="true"/>
 
-    <EditText
-        android:id="@+id/etResult"
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/cbCompactView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Компактный вид"
+                android:checked="false"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutResult"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:layout_marginHorizontal="16dp"
         android:layout_marginTop="16dp"
         android:layout_marginBottom="16dp"
-        android:background="@android:drawable/editbox_background"
-        android:gravity="top|start"
-        android:inputType="textMultiLine"
-        android:padding="8dp"
-        android:scrollbars="vertical"
-        android:textSize="12sp"
-        app:layout_constraintTop_toBottomOf="@id/layoutSettings"
-        app:layout_constraintBottom_toTopOf="@id/layoutButtons"/>
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        app:layout_constraintTop_toBottomOf="@id/cardSettings"
+        app:layout_constraintBottom_toTopOf="@id/layoutButtons">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etResult"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="top|start"
+            android:inputType="textMultiLine"
+            android:scrollbars="vertical"
+            android:textSize="13sp"
+            android:fontFamily="monospace"/>
+    </com.google.android.material.textfield.TextInputLayout>
 
     <LinearLayout
         android:id="@+id/layoutButtons"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="16dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCopy"
+            style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="56dp"
             android:layout_weight="1"
-            android:text="Скопировать" />
+            app:icon="@drawable/ic_copy"
+            android:text="Скопировать"
+            android:layout_marginEnd="8dp"/>
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnShare"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="56dp"
             android:layout_weight="1"
+            app:icon="@drawable/ic_share"
             android:text="Поделиться" />
     </LinearLayout>
 
