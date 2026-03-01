@@ -7,6 +7,10 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.proxychecker.databinding.ActivityMainBinding
@@ -22,29 +26,36 @@ class MainActivity : AppCompatActivity() {
     private var sortCountryAsc = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
+        // 1. ЖЕСТКОЕ ПРИМЕНЕНИЕ ТЕМЫ
         val prefs = getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-        val isDarkMode = prefs.getBoolean("isDarkTheme", true)
+        // ИСПРАВЛЕНО: false (Светлая по умолчанию), чтобы совпадало с ProxyApplication
+        val isDarkMode = prefs.getBoolean("isDarkTheme", false)
 
         if (isDarkMode) {
-            androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES)
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
         } else {
-            androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO)
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         }
 
+        super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // 2. СКРЫТИЕ СТРОКИ СОСТОЯНИЯ
+        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+        windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        windowInsetsController.hide(WindowInsetsCompat.Type.statusBars())
+
+        // Кнопка смены темы
         binding.btnThemeToggle.setOnClickListener {
-            val currentNightMode = prefs.getBoolean("isDarkTheme", true)
+            val currentNightMode = prefs.getBoolean("isDarkTheme", false) // Здесь тоже исправлено на false
             val newMode = !currentNightMode
             prefs.edit().putBoolean("isDarkTheme", newMode).apply()
 
             if (newMode) {
-                androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES)
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
             } else {
-                androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO)
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
             }
         }
 
@@ -79,11 +90,9 @@ class MainActivity : AppCompatActivity() {
             ProxyManager.proxyList.forEach { it.isSelected = false }
 
             if (input.isNotEmpty()) {
-                // Если есть новый текст - очищаем и грузим новое
                 ProxyManager.proxyList.clear()
                 adapter.notifyDataSetChanged()
             } else {
-                // Если текста нет - сбрасываем статус старых прокси для перепроверки
                 ProxyManager.proxyList.forEach {
                     it.isAlive = false
                     it.pingMs = -1
@@ -112,7 +121,6 @@ class MainActivity : AppCompatActivity() {
             adapter.notifyDataSetChanged()
         }
 
-        // --- СОРТИРОВКА С ОБНОВЛЕНИЕМ СТРЕЛОЧЕК ---
         binding.headerPing.setOnClickListener {
             if (sortPingAsc) {
                 ProxyManager.proxyList.sortBy { if (it.isAlive) it.pingMs else Long.MAX_VALUE }
@@ -122,11 +130,8 @@ class MainActivity : AppCompatActivity() {
                 binding.headerPing.text = "Пинг ▼"
             }
             sortPingAsc = !sortPingAsc
-
-            // Сброс остальных
             binding.headerProtocol.text = "Тип ▼"
             binding.headerCountry.text = "Страна ▼"
-
             adapter.notifyDataSetChanged()
         }
 
@@ -139,10 +144,8 @@ class MainActivity : AppCompatActivity() {
                 binding.headerProtocol.text = "Тип ▼"
             }
             sortProtoAsc = !sortProtoAsc
-
             binding.headerPing.text = "Пинг ▼"
             binding.headerCountry.text = "Страна ▼"
-
             adapter.notifyDataSetChanged()
         }
 
@@ -155,10 +158,8 @@ class MainActivity : AppCompatActivity() {
                 binding.headerCountry.text = "Страна ▼"
             }
             sortCountryAsc = !sortCountryAsc
-
             binding.headerPing.text = "Пинг ▼"
             binding.headerProtocol.text = "Тип ▼"
-
             adapter.notifyDataSetChanged()
         }
 
@@ -226,7 +227,6 @@ class MainActivity : AppCompatActivity() {
     private fun saveTextToDownloads(text: String) {
         try {
             val fileName = "Proxies_${System.currentTimeMillis()}.txt"
-
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
                 val values = android.content.ContentValues().apply {
                     put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, fileName)
@@ -235,9 +235,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 val uri = contentResolver.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
                 if (uri != null) {
-                    contentResolver.openOutputStream(uri)?.use {
-                        it.write(text.toByteArray())
-                    }
+                    contentResolver.openOutputStream(uri)?.use { it.write(text.toByteArray()) }
                     Toast.makeText(this, "Файл сохранен в Загрузки", Toast.LENGTH_LONG).show()
                 }
             } else {
@@ -253,26 +251,19 @@ class MainActivity : AppCompatActivity() {
 
     private var planeAnimator: android.animation.AnimatorSet? = null
 
-    // Добавьте этот метод в класс MainActivity
     private fun startPlaneAnimation() {
-        if (planeAnimator != null) return // Уже запущена
-
+        if (planeAnimator != null) return
         val plane = binding.ivPlane
-
-        // Анимация покачивания вверх-вниз (Y)
         val translationY = android.animation.ObjectAnimator.ofFloat(plane, "translationY", 0f, -10f, 0f).apply {
             duration = 2000
             repeatCount = android.animation.ValueAnimator.INFINITE
             interpolator = android.view.animation.AccelerateDecelerateInterpolator()
         }
-
-        // Анимация небольшого наклона (Rotation) - "петляние" носом
         val rotation = android.animation.ObjectAnimator.ofFloat(plane, "rotation", 0f, -15f, 0f).apply {
-            duration = 1800 // Чуть быстрее, чтобы рассинхронизировать с Y
+            duration = 1800
             repeatCount = android.animation.ValueAnimator.INFINITE
             interpolator = android.view.animation.LinearInterpolator()
         }
-
         planeAnimator = android.animation.AnimatorSet().apply {
             playTogether(translationY, rotation)
             start()
@@ -295,21 +286,20 @@ class MainActivity : AppCompatActivity() {
                         binding.btnPause.isEnabled = false
                         binding.btnStop.isEnabled = false
                         binding.btnPause.setIconResource(R.drawable.ic_pause)
-                        stopPlaneAnimation() // Останавливаем самолет
+                        stopPlaneAnimation()
                     }
                     CheckerState.RUNNING -> {
                         binding.btnStart.isEnabled = false
                         binding.btnPause.isEnabled = true
                         binding.btnStop.isEnabled = true
                         binding.btnPause.setIconResource(R.drawable.ic_pause)
-                        startPlaneAnimation() // Запускаем полет
+                        startPlaneAnimation()
                     }
                     CheckerState.PAUSED -> {
                         binding.btnStart.isEnabled = false
                         binding.btnPause.isEnabled = true
                         binding.btnStop.isEnabled = true
                         binding.btnPause.setIconResource(R.drawable.ic_play)
-                        // Можно не останавливать анимацию, пусть "парит" на месте
                     }
                 }
             }
@@ -317,17 +307,13 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             ProxyManager.progressFlow.collect { (current, total) ->
-                // Обновляем текст
                 binding.tvProgress.text = "Готово: $current / $total"
-
-                // Двигаем самолетик и линию
                 if (total > 0) {
                     val percent = current.toFloat() / total.toFloat()
                     val params = binding.progressGuideline.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
                     params.guidePercent = percent
                     binding.progressGuideline.layoutParams = params
                 } else {
-                    // Сброс в начало
                     val params = binding.progressGuideline.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
                     params.guidePercent = 0f
                     binding.progressGuideline.layoutParams = params
@@ -339,7 +325,6 @@ class MainActivity : AppCompatActivity() {
             ProxyManager.listUpdateFlow.collect {
                 adapter.notifyDataSetChanged()
                 binding.etInput.setText("")
-                // Сброс прогресса при загрузке нового списка
                 val params = binding.progressGuideline.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
                 params.guidePercent = 0f
                 binding.progressGuideline.layoutParams = params

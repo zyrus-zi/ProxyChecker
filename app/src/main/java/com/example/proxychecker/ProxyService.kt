@@ -33,7 +33,7 @@ class ProxyService : Service() {
             .setSmallIcon(android.R.drawable.ic_menu_sort_by_size)
             .setContentIntent(pendingIntent)
             .setOnlyAlertOnce(true)
-            .setOngoing(true)
+            .setOngoing(true) // Уведомление нельзя смахнуть, пока сервис работает
 
         startForeground(NOTIFICATION_ID, notificationBuilder.build())
 
@@ -56,6 +56,18 @@ class ProxyService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         serviceScope.cancel()
+
+        // 1. Убираем сервис из Foreground
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        } else {
+            @Suppress("DEPRECATION")
+            stopForeground(true)
+        }
+
+        // 2. ГАРАНТИРОВАННО удаляем уведомление о прогрессе
+        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        manager.cancel(NOTIFICATION_ID)
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -64,7 +76,7 @@ class ProxyService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID, "Proxy Checker Progress",
-                NotificationManager.IMPORTANCE_LOW // LOW чтобы не пищало каждую секунду
+                NotificationManager.IMPORTANCE_LOW
             )
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)
@@ -75,9 +87,12 @@ class ProxyService : Service() {
         fun showCompletionNotification(context: Context) {
             val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-            // Канал для завершения (со звуком)
+            // Создаем канал для финального уведомления (со звуком/вибрацией)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val channel = NotificationChannel("proxy_finish", "Proxy Checker Alerts", NotificationManager.IMPORTANCE_DEFAULT)
+                val channelId = "proxy_finish"
+                val channelName = "Proxy Checker Alerts"
+                // IMPORTANCE_DEFAULT или HIGH, чтобы был звук и всплывающее окно
+                val channel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_DEFAULT)
                 manager.createNotificationChannel(channel)
             }
 
@@ -90,10 +105,11 @@ class ProxyService : Service() {
                 .setContentTitle("Проверка завершена!")
                 .setContentText("Все прокси успешно проверены.")
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setAutoCancel(true)
+                .setAutoCancel(true) // Исчезает при нажатии
                 .setContentIntent(pendingIntent)
                 .build()
 
+            // ID 1002 - это новое уведомление, оно заменит визуально старое
             manager.notify(1002, notification)
         }
     }

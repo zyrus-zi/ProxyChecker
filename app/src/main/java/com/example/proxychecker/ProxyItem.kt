@@ -16,20 +16,23 @@ data class ProxyItem(
     var country: String = "Unknown",
     var isSelected: Boolean = false
 ) {
-    // Генерация ссылки для Телеграма (Telegram поддерживает только MTProto и SOCKS5)
+    // Генерация ссылки для Телеграма
     fun toTgLink(): String {
         return when {
             protocol == ProxyProtocol.MTPROTO && secret != null ->
                 "https://t.me/proxy?server=$host&port=$port&secret=$secret"
 
-            protocol == ProxyProtocol.SOCKS5 -> {
+            // Telegram поддерживает только SOCKS5 ссылки.
+            // Но мы "обманываем" систему и разрешаем SOCKS4 генерировать такую же ссылку,
+            // на случай если чекер ошибся с протоколом или сервер поддерживает оба.
+            protocol == ProxyProtocol.SOCKS5 || protocol == ProxyProtocol.SOCKS4 -> {
                 if (user != null && pass != null) {
                     "https://t.me/socks?server=$host&port=$port&user=$user&pass=$pass"
                 } else {
                     "https://t.me/socks?server=$host&port=$port"
                 }
             }
-            else -> "" // HTTP, HTTPS, SOCKS4 не поддерживаются Telegram клиентами
+            else -> ""
         }
     }
 

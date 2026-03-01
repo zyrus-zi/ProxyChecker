@@ -124,7 +124,11 @@ object ProxyManager {
             if (isActive) {
                 stateFlow.value = CheckerState.IDLE
                 finishedFlow.tryEmit(Unit)
+                // Останавливаем сервис прогресса
                 context.stopService(serviceIntent)
+                // Небольшая задержка, чтобы сервис успел удалиться и убрать свое уведомление
+                delay(200)
+                // Показываем уведомление о завершении
                 ProxyService.showCompletionNotification(context)
             }
         }
@@ -143,7 +147,6 @@ object ProxyManager {
         } catch (_: Exception) { emptyList() }
     }
 
-    // --- ГИБРИДНЫЙ ПАРСЕР ТЕЛЕГРАМА ---
     private suspend fun fetchFromTelegram(originalUrl: String): List<ProxyItem> = withContext(Dispatchers.IO) {
         val proxies = mutableListOf<ProxyItem>()
         try {
@@ -157,8 +160,6 @@ object ProxyManager {
                 .replace("t.me/", "")
 
             val parts = path.split("/").filter { it.isNotEmpty() }
-
-            // Если в конце цифры -> Это сообщение
             val isMessage = parts.isNotEmpty() && parts.last().all { it.isDigit() }
 
             if (isMessage) {
@@ -166,41 +167,23 @@ object ProxyManager {
                 val msgId = parts.last()
 
                 if (parts.size >= 3) {
-                    // === СЛУЧАЙ 1: Топик (Channel/Topic/Msg) ===
-                    // Используем Embed (как вы просили для LowiKForum)
                     val embedUrl = "https://t.me/$channelName/$msgId?embed=1&mode=tme"
-
-                    val doc = Jsoup.connect(embedUrl)
-                        .userAgent("Mozilla/5.0")
-                        .get()
-
+                    val doc = Jsoup.connect(embedUrl).userAgent("Mozilla/5.0").get()
                     val contentElements = doc.select("div.tgme_widget_message_text")
                     if (contentElements.isNotEmpty()) {
                         proxies.addAll(ProxyParser.parseText(contentElements.text() + " " + contentElements.select("a").joinToString(" ") { it.attr("href") }))
                     }
-
                 } else {
-                    // === СЛУЧАЙ 2: Обычный пост (Channel/Msg) ===
-                    // Используем старый Web Preview (как для MPrxy), так как он надежнее для обычных каналов
                     val scrapeUrl = "https://t.me/s/$channelName/$msgId"
                     val dataPostId = "$channelName/$msgId"
-
-                    val doc = Jsoup.connect(scrapeUrl)
-                        .userAgent("Mozilla/5.0")
-                        .get()
-
-                    // Ищем конкретное сообщение по ID
+                    val doc = Jsoup.connect(scrapeUrl).userAgent("Mozilla/5.0").get()
                     val specificMessageElement = doc.selectFirst("div.tgme_widget_message[data-post='$dataPostId']")
-
                     if (specificMessageElement != null) {
                         proxies.addAll(ProxyParser.parseText(specificMessageElement.text() + " " + specificMessageElement.select("a").joinToString(" ") { it.attr("href") }))
                     }
                 }
-
             } else {
-                // === СЛУЧАЙ 3: Канал целиком (Листаем историю) ===
                 var currentUrl = "https://t.me/s/${parts[0]}"
-
                 val oneMonthAgoMillis = System.currentTimeMillis() - (30L * 24 * 60 * 60 * 1000)
                 val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
                 var pageCount = 0
@@ -211,7 +194,6 @@ object ProxyManager {
                     val doc = Jsoup.connect(currentUrl).get()
                     val text = doc.text()
                     val links = doc.select("a").joinToString(" ") { it.attr("href") }
-
                     proxies.addAll(ProxyParser.parseText("$text $links"))
 
                     var oldestOnPage = System.currentTimeMillis()
@@ -221,24 +203,15 @@ object ProxyManager {
                         try {
                             val dateStr = datetime.substringBefore("T")
                             val date = sdf.parse(dateStr)
-                            if (date != null && date.time < oldestOnPage) {
-                                oldestOnPage = date.time
-                            }
+                            if (date != null && date.time < oldestOnPage) oldestOnPage = date.time
                         } catch (_: Exception) {}
                     }
-
                     if (oldestOnPage < oneMonthAgoMillis) break
-
                     val moreLink = doc.select("a.tme_messages_more").attr("href")
-                    if (moreLink.isNotEmpty()) {
-                        currentUrl = "https://t.me$moreLink"
-                    } else {
-                        break
-                    }
+                    if (moreLink.isNotEmpty()) currentUrl = "https://t.me$moreLink" else break
                 }
             }
         } catch (_: Exception) {}
-
         return@withContext proxies.distinctBy { "${it.host}:${it.port}" }
     }
 }
