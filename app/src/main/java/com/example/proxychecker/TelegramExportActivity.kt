@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
@@ -31,7 +32,7 @@ class TelegramExportActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // ТЕМА: ИСПРАВЛЕНО НА false
+        // 1. ТЕМА
         val prefs = getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
         val isDarkMode = prefs.getBoolean("isDarkTheme", false)
         if (isDarkMode) {
@@ -43,11 +44,18 @@ class TelegramExportActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_telegram_export)
 
-        // СКРЫТИЕ СТАТУС БАРА
+        // 2. СКРЫТИЕ СТАТУС БАРА
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         windowInsetsController.hide(WindowInsetsCompat.Type.statusBars())
 
+        // 3. ЛОГИКА ЗВЕЗД (ИСПРАВЛЕНО: Теперь звезды отключаются глобально)
+        val starField = findViewById<StarFieldView>(R.id.starField)
+        val isStarsEnabled = prefs.getBoolean("isStarsEnabled", true)
+        starField.visibility = if (isStarsEnabled) View.VISIBLE else View.GONE
+        if (isStarsEnabled) starField.updateColors()
+
+        // Остальная инициализация
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -99,12 +107,10 @@ class TelegramExportActivity : AppCompatActivity() {
 
     private fun showProtocolSelectionDialog() {
         val availableProtocols = selectedProxies.map { it.protocol }.distinct().sortedBy { it.name }
-
         if (availableProtocols.isEmpty()) {
-            Toast.makeText(this, "Нет доступных протоколов для отправки", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Нет доступных протоколов", Toast.LENGTH_SHORT).show()
             return
         }
-
         val protocolNames = availableProtocols.map { it.name }.toTypedArray()
         val checkedItems = BooleanArray(availableProtocols.size) { true }
 
@@ -114,13 +120,9 @@ class TelegramExportActivity : AppCompatActivity() {
                 checkedItems[which] = isChecked
             }
             .setPositiveButton("Отправить") { _, _ ->
-                val selectedProtocols = mutableListOf<ProxyProtocol>()
-                for (i in checkedItems.indices) {
-                    if (checkedItems[i]) {
-                        selectedProtocols.add(availableProtocols[i])
-                    }
-                }
-                sendToTelegramSavedMessages(selectedProtocols)
+                val selected = mutableListOf<ProxyProtocol>()
+                for (i in checkedItems.indices) if (checkedItems[i]) selected.add(availableProtocols[i])
+                sendToTelegramSavedMessages(selected)
             }
             .setNegativeButton("Отмена", null)
             .show()
@@ -128,94 +130,63 @@ class TelegramExportActivity : AppCompatActivity() {
 
     private fun sendToTelegramSavedMessages(protocols: List<ProxyProtocol>) {
         val filteredList = selectedProxies.filter { protocols.contains(it.protocol) }
-
-        if (filteredList.isEmpty()) {
-            Toast.makeText(this, "Ничего не выбрано", Toast.LENGTH_SHORT).show()
-            return
-        }
+        if (filteredList.isEmpty()) return
 
         val sb = StringBuilder()
-        val includeCountry = cbIncludeCountry.isChecked
-        val includePing = cbIncludePing.isChecked
-        val groupByProtocol = cbGroupByProtocol.isChecked
-        val isCompact = cbCompactView.isChecked
-
-        if (groupByProtocol) {
+        if (cbGroupByProtocol.isChecked) {
             val grouped = filteredList.groupBy {
                 if (it.protocol == ProxyProtocol.SOCKS4) ProxyProtocol.SOCKS5 else it.protocol
             }
             for ((protocol, list) in grouped) {
                 sb.append("\n------- ${protocol.name} -------\n\n")
-                appendProxyList(sb, list, includeCountry, includePing, isCompact)
+                appendProxyList(sb, list, cbIncludeCountry.isChecked, cbIncludePing.isChecked, cbCompactView.isChecked)
             }
         } else {
-            appendProxyList(sb, filteredList, includeCountry, includePing, isCompact)
+            appendProxyList(sb, filteredList, cbIncludeCountry.isChecked, cbIncludePing.isChecked, cbCompactView.isChecked)
         }
 
         val finalMessage = sb.toString().trim()
-
         try {
             val uri = Uri.parse("tg://msg?text=${Uri.encode(finalMessage)}")
-            val intent = Intent(Intent.ACTION_VIEW, uri)
-            startActivity(intent)
+            startActivity(Intent(Intent.ACTION_VIEW, uri))
         } catch (e: Exception) {
             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
                 putExtra(Intent.EXTRA_TEXT, finalMessage)
                 setPackage("org.telegram.messenger")
             }
-            try {
-                startActivity(shareIntent)
-            } catch (ex: Exception) {
-                Toast.makeText(this, "Не удалось открыть Telegram.", Toast.LENGTH_LONG).show()
+            try { startActivity(shareIntent) } catch (ex: Exception) {
+                Toast.makeText(this, "Telegram не найден", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
     private fun updateResultText() {
-        val includeCountry = cbIncludeCountry.isChecked
-        val includePing = cbIncludePing.isChecked
-        val groupByProtocol = cbGroupByProtocol.isChecked
-        val isCompact = cbCompactView.isChecked
-
         val sb = StringBuilder()
-
-        if (groupByProtocol) {
+        if (cbGroupByProtocol.isChecked) {
             val grouped = selectedProxies.groupBy {
                 if (it.protocol == ProxyProtocol.SOCKS4) ProxyProtocol.SOCKS5 else it.protocol
             }
             for ((protocol, list) in grouped) {
                 sb.append("\n------- ${protocol.name} -------\n\n")
-                appendProxyList(sb, list, includeCountry, includePing, isCompact)
+                appendProxyList(sb, list, cbIncludeCountry.isChecked, cbIncludePing.isChecked, cbCompactView.isChecked)
             }
         } else {
-            appendProxyList(sb, selectedProxies, includeCountry, includePing, isCompact)
+            appendProxyList(sb, selectedProxies, cbIncludeCountry.isChecked, cbIncludePing.isChecked, cbCompactView.isChecked)
         }
-
         etResult.setText(sb.toString().trim())
     }
 
-    private fun appendProxyList(
-        sb: StringBuilder,
-        list: List<ProxyItem>,
-        includeCountry: Boolean,
-        includePing: Boolean,
-        isCompact: Boolean
-    ) {
+    private fun appendProxyList(sb: StringBuilder, list: List<ProxyItem>, country: Boolean, ping: Boolean, compact: Boolean) {
         for (proxy in list) {
-            if (includeCountry || includePing) {
-                val headerParts = mutableListOf<String>()
-                if (includeCountry) headerParts.add(proxy.country)
-                if (includePing) headerParts.add("⚡ ${proxy.pingMs}ms")
-
-                sb.append(headerParts.joinToString(" | ")).append("\n")
+            if (country || ping) {
+                val p = mutableListOf<String>()
+                if (country) p.add(proxy.country)
+                if (ping) p.add("⚡ ${proxy.pingMs}ms")
+                sb.append(p.joinToString(" | ")).append("\n")
             }
-
             sb.append(proxy.toTgLink()).append("\n")
-
-            if (!isCompact) {
-                sb.append("\n")
-            }
+            if (!compact) sb.append("\n")
         }
     }
 }

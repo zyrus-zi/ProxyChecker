@@ -3,8 +3,13 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:attr/colorBackground"
-    android:padding="12dp">
+    android:background="?android:attr/colorBackground">
+
+    <!-- ФОН СО ЗВЕЗДАМИ -->
+    <com.example.proxychecker.StarFieldView
+        android:id="@+id/starField"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
     <!-- 1. Шапка -->
     <LinearLayout
@@ -13,38 +18,58 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
+        android:padding="12dp"
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageView
             android:layout_width="32dp"
             android:layout_height="32dp"
-            android:src="@drawable/ic_logo_shield"/>
+            android:src="@drawable/ic_logo_shield"
+            app:tint="?attr/colorPrimary"/>
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Proxy Checker"
-            android:textSize="22sp"
+            android:text="@string/app_name"
+            android:textSize="20sp"
             android:textStyle="bold"
-            android:layout_marginStart="12dp"
-            android:textColor="?attr/colorPrimary"/>
+            android:layout_marginStart="8dp"
+            android:textColor="?attr/colorOnBackground"/>
 
+        <!-- Кнопка инфо -->
+        <ImageButton
+            android:id="@+id/btnInfo"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_info"/>
+
+        <!-- Кнопка звезд -->
+        <ImageButton
+            android:id="@+id/btnStarsToggle"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_stars"
+            android:layout_marginHorizontal="4dp"/>
+
+        <!-- Кнопка темы -->
         <ImageButton
             android:id="@+id/btnThemeToggle"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_theme_dark"/>
     </LinearLayout>
 
-    <!-- 2. Поле ввода -->
+    <!-- Поле ввода (с прозрачным фоном карточки для красоты) -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/layoutInput"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:hint="Вставьте прокси или ссылки (GitHub, Telegram)"
+        android:layout_marginHorizontal="16dp"
+        android:hint="@string/paste_proxy_or_links"
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
         app:layout_constraintTop_toBottomOf="@id/layoutHeader">
 
@@ -56,29 +81,29 @@
             android:inputType="textMultiLine" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- 3. Выбор протокола -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/layoutProtocol"
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
         android:layout_marginTop="8dp"
-        android:hint="Протокол"
+        android:hint="@string/protocol"
         app:layout_constraintTop_toBottomOf="@id/layoutInput">
         <AutoCompleteTextView
             android:id="@+id/spinnerProtocol"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="none"
-            android:text="Автоопределение"/>
+            android:text="@string/auto_detect"/>
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- 4. Настройки (Потоки и Таймаут) -->
     <LinearLayout
         android:id="@+id/layoutSettings"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
         android:layout_marginTop="8dp"
         app:layout_constraintTop_toBottomOf="@id/layoutProtocol">
 
@@ -88,7 +113,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginEnd="8dp"
-            android:hint="Потоки">
+            android:hint="@string/threads">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etThreads"
                 android:layout_width="match_parent"
@@ -102,7 +127,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="Таймаут (мс)">
+            android:hint="@string/timeout_ms">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etTimeout"
                 android:layout_width="match_parent"
@@ -112,13 +137,14 @@
         </com.google.android.material.textfield.TextInputLayout>
     </LinearLayout>
 
-    <!-- 5. Кнопки управления -->
+    <!-- Кнопки управления -->
     <LinearLayout
         android:id="@+id/layoutControls"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
         android:layout_marginTop="12dp"
         app:layout_constraintTop_toBottomOf="@id/layoutSettings">
 
@@ -128,59 +154,44 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:paddingVertical="12dp"
-            android:text="СТАРТ"
+            android:text="@string/start"
             android:textSize="16sp"
             android:textStyle="bold"
             app:icon="@drawable/ic_play"
             app:iconGravity="textStart"
             android:layout_marginEnd="12dp"/>
 
-        <!-- Пауза (Только иконка) -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnPause"
             style="@style/Widget.Material3.Button.OutlinedButton.Icon"
             android:layout_width="56dp"
             android:layout_height="56dp"
             app:icon="@drawable/ic_pause"
-            app:iconPadding="0dp"
             app:iconSize="24dp"
-            android:insetLeft="0dp"
-            android:insetTop="0dp"
-            android:insetRight="0dp"
-            android:insetBottom="0dp"
-            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Medium"
             android:enabled="false"
             android:layout_marginEnd="8dp"/>
 
-        <!-- Стоп (Только иконка, красная) -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnStop"
             style="@style/Widget.Material3.Button.OutlinedButton.Icon"
             android:layout_width="56dp"
             android:layout_height="56dp"
             app:icon="@drawable/ic_stop"
-            app:iconPadding="0dp"
             app:iconSize="24dp"
-            android:insetLeft="0dp"
-            android:insetTop="0dp"
-            android:insetRight="0dp"
-            android:insetBottom="0dp"
-            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Medium"
             app:strokeColor="?attr/colorError"
             app:iconTint="?attr/colorError"
             android:enabled="false"/>
     </LinearLayout>
 
-    <!-- 6. Прогресс -->
+    <!-- Progress -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/layoutProgress"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:paddingHorizontal="4dp"
+        android:paddingHorizontal="20dp"
         app:layout_constraintTop_toBottomOf="@id/layoutControls">
 
-        <!-- Направляющая, которая двигается от 0 до 1 -->
         <androidx.constraintlayout.widget.Guideline
             android:id="@+id/progressGuideline"
             android:layout_width="wrap_content"
@@ -188,19 +199,16 @@
             android:orientation="vertical"
             app:layout_constraintGuide_percent="0.0" />
 
-        <!-- Серый фон полоски -->
         <View
             android:id="@+id/viewTrack"
             android:layout_width="0dp"
             android:layout_height="4dp"
-            android:background="#E0E0E0"
-            android:backgroundTint="?attr/colorSurfaceVariant"
+            android:background="?attr/colorSurfaceVariant"
             app:layout_constraintBottom_toBottomOf="@id/ivPlane"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@id/ivPlane" />
 
-        <!-- Заполненная часть (Синяя) -->
         <View
             android:id="@+id/viewProgressFill"
             android:layout_width="0dp"
@@ -211,7 +219,6 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@id/viewTrack" />
 
-        <!-- Самолетик (привязан к Guideline) -->
         <ImageView
             android:id="@+id/ivPlane"
             android:layout_width="32dp"
@@ -220,28 +227,28 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="@id/progressGuideline"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintHorizontal_bias="0.5"
-            android:translationX="-16dp"/>
-        <!-- translationX смещает центр самолета на конец линии -->
-
+            android:translationX="-16dp"
+            app:tint="?attr/colorPrimary"/>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <TextView
         android:id="@+id/tvProgress"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Проверено: 0 / 0"
+        android:text="@string/checked_0_0"
         android:textAlignment="center"
         android:textStyle="bold"
         android:layout_marginTop="4dp"
+        android:textColor="?attr/colorOnSurfaceVariant"
         app:layout_constraintTop_toBottomOf="@id/layoutProgress" />
 
-    <!-- 7. Шапка таблицы -->
+    <!-- Table Header -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardTableHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:cardBackgroundColor="?attr/colorSecondaryContainer"
+        android:layout_marginHorizontal="12dp"
+        app:cardBackgroundColor="?attr/colorSurfaceContainer"
         app:cardElevation="0dp"
         android:layout_marginTop="12dp"
         app:layout_constraintTop_toBottomOf="@id/tvProgress">
@@ -254,50 +261,51 @@
             android:padding="8dp">
 
             <CheckBox android:id="@+id/cbSelectAll" android:layout_width="32dp" android:layout_height="32dp"/>
-            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="2.5" android:text="Адрес" android:textStyle="bold" />
-            <TextView android:id="@+id/headerProtocol" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.2" android:text="Тип ▼" android:textStyle="bold" android:textColor="?attr/colorPrimary" />
-            <TextView android:id="@+id/headerPing" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Пинг ▼" android:textStyle="bold" android:textColor="?attr/colorPrimary" />
-            <TextView android:id="@+id/headerCountry" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.5" android:text="Страна ▼" android:textStyle="bold" android:textColor="?attr/colorPrimary" />
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="2.5" android:text="@string/address" android:textStyle="bold" android:textColor="?attr/colorOnSurface"/>
+            <TextView android:id="@+id/headerProtocol" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.2" android:text="@string/type_sort" android:textStyle="bold" android:textColor="?attr/colorPrimary" />
+            <TextView android:id="@+id/headerPing" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/ping_sort" android:textStyle="bold" android:textColor="?attr/colorPrimary" />
+            <TextView android:id="@+id/headerCountry" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.5" android:text="@string/country_sort" android:textStyle="bold" android:textColor="?attr/colorPrimary" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- 8. Таблица (Занимает всё оставшееся место) -->
+    <!-- Table -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:layout_marginHorizontal="12dp"
         android:layout_marginTop="2dp"
         android:layout_marginBottom="8dp"
-        android:clipToPadding="false"
         app:layout_constraintTop_toBottomOf="@id/cardTableHeader"
         app:layout_constraintBottom_toTopOf="@id/layoutExport" />
 
-    <!-- 9. Кнопки Экспорта -->
+    <!-- Export -->
     <LinearLayout
         android:id="@+id/layoutExport"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="12dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnExportTxt"
             style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:paddingVertical="12dp"
+            android:layout_height="56dp"
             android:layout_weight="1"
-            android:text="Сохранить TXT"
+            android:text="@string/save_txt"
             app:icon="@drawable/ic_save"
             android:layout_marginEnd="8dp"/>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnExportTg"
+            style="@style/Widget.Material3.Button"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:paddingVertical="12dp"
+            android:layout_height="56dp"
             android:layout_weight="1"
-            android:text="Ссылки ТГ"
+            android:text="@string/tg_links"
             app:icon="@drawable/ic_telegram"/>
     </LinearLayout>
 

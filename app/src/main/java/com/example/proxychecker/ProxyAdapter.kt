@@ -1,11 +1,15 @@
 package com.example.proxychecker
 
+import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
 import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.CheckBox
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 
 class ProxyAdapter(private val proxyList: List<ProxyItem>) :
@@ -17,6 +21,7 @@ class ProxyAdapter(private val proxyList: List<ProxyItem>) :
         val tvProtocol: TextView = view.findViewById(R.id.tvProtocol)
         val tvPing: TextView = view.findViewById(R.id.tvPing)
         val tvCountry: TextView = view.findViewById(R.id.tvCountry)
+        val rootView: View = view
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProxyViewHolder {
@@ -26,27 +31,83 @@ class ProxyAdapter(private val proxyList: List<ProxyItem>) :
 
     override fun onBindViewHolder(holder: ProxyViewHolder, position: Int) {
         val proxy = proxyList[position]
+        val context = holder.itemView.context
 
         holder.tvAddress.text = proxy.toString()
         holder.tvProtocol.text = proxy.protocol.name
         holder.tvCountry.text = proxy.country
 
+        // Определяем тему для выбора цвета статуса
+        val isDark = (context.resources.configuration.uiMode and
+                android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+                android.content.res.Configuration.UI_MODE_NIGHT_YES
+
         if (proxy.isAlive) {
             holder.tvPing.text = "${proxy.pingMs}ms"
-            holder.tvPing.setTextColor(Color.parseColor("#008000")) // Зеленый
+            val colorRes = if (isDark) R.color.status_alive_dark else R.color.status_alive_light
+            holder.tvPing.setTextColor(ContextCompat.getColor(context, colorRes))
         } else {
             holder.tvPing.text = "Dead"
-            holder.tvPing.setTextColor(Color.RED)
+            val colorRes = if (isDark) R.color.status_dead_dark else R.color.status_dead_light
+            holder.tvPing.setTextColor(ContextCompat.getColor(context, colorRes))
         }
 
-        // Отключаем слушатель, чтобы при прокрутке чекбоксы не сходили с ума
+        // Disable listener to prevent checkbox issues during scroll
         holder.cbSelect.setOnCheckedChangeListener(null)
         holder.cbSelect.isChecked = proxy.isSelected
 
         holder.cbSelect.setOnCheckedChangeListener { _, isChecked ->
             proxy.isSelected = isChecked
+            animateItemSelection(holder, isChecked)
         }
+
+        // Add entrance animation
+        animateItemEntrance(holder, position)
     }
 
     override fun getItemCount(): Int = proxyList.size
+
+    /**
+     * Animate item entrance with scale and alpha
+     */
+    private fun animateItemEntrance(holder: ProxyViewHolder, position: Int) {
+        holder.rootView.alpha = 0f
+        holder.rootView.scaleY = 0.8f
+
+        val alphaAnimator = ObjectAnimator.ofFloat(holder.rootView, "alpha", 0f, 1f).apply {
+            duration = 300
+            startDelay = (position * 30).toLong()
+        }
+
+        val scaleAnimator = ObjectAnimator.ofFloat(holder.rootView, "scaleY", 0.8f, 1f).apply {
+            duration = 300
+            startDelay = (position * 30).toLong()
+            interpolator = AccelerateDecelerateInterpolator()
+        }
+
+        AnimatorSet().apply {
+            playTogether(alphaAnimator, scaleAnimator)
+            start()
+        }
+    }
+
+    /**
+     * Animate item selection with pulse effect
+     */
+    private fun animateItemSelection(holder: ProxyViewHolder, isSelected: Boolean) {
+        val scaleX = if (isSelected) 1.05f else 1f
+        val scaleY = if (isSelected) 1.05f else 1f
+
+        ObjectAnimator.ofFloat(holder.rootView, "scaleX", holder.rootView.scaleX, scaleX).apply {
+            duration = 200
+            interpolator = AccelerateDecelerateInterpolator()
+            start()
+        }
+
+        ObjectAnimator.ofFloat(holder.rootView, "scaleY", holder.rootView.scaleY, scaleY).apply {
+            duration = 200
+            interpolator = AccelerateDecelerateInterpolator()
+            start()
+        }
+    }
 }

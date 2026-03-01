@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:paddingHorizontal="8dp"
+    android:paddingHorizontal="12dp"
     android:paddingVertical="12dp"
     android:gravity="center_vertical"
     android:background="?attr/selectableItemBackground">
@@ -18,8 +18,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="2.5"
-        android:textSize="13sp"
-        android:textStyle="bold"
+        android:textSize="14sp"
         android:textColor="?attr/colorOnSurface"
         android:text="127.0.0.1:8080" />
 

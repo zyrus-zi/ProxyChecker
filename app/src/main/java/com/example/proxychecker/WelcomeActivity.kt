@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.view.View
 import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -23,9 +24,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 class WelcomeActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Тема здесь применится, но основную работу делает ProxyApplication
         val prefs = getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-        val isDarkMode = prefs.getBoolean("isDarkTheme", false) // По умолчанию false (Светлая)
+        val isDarkMode = prefs.getBoolean("isDarkTheme", false)
         if (isDarkMode) {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
         } else {
@@ -34,18 +34,23 @@ class WelcomeActivity : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
 
-        val isFirstRun = prefs.getBoolean("isFirstRun", true)
-        if (!isFirstRun) {
+        if (!prefs.getBoolean("isFirstRun", true)) {
             goToMain()
             return
         }
 
         setContentView(R.layout.activity_welcome)
 
-        // Скрытие статус бара
+        // СКРЫТИЕ СТАТУС БАРА
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         windowInsetsController.hide(WindowInsetsCompat.Type.statusBars())
+
+        // НАСТРОЙКА ФОНА (Исправлено)
+        val starField = findViewById<StarFieldView>(R.id.starField)
+        val isStarsEnabled = prefs.getBoolean("isStarsEnabled", true)
+        starField.visibility = if (isStarsEnabled) View.VISIBLE else View.GONE
+        if (isStarsEnabled) starField.updateColors()
 
         val btnNotify = findViewById<Button>(R.id.btnNotifyPerm)
         val btnBattery = findViewById<Button>(R.id.btnBatteryPerm)
@@ -64,15 +69,17 @@ class WelcomeActivity : AppCompatActivity() {
         }
 
         btnBattery.setOnClickListener {
-            if (isBatteryOptimizationIgnored()) {
+            val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+            if (pm.isIgnoringBatteryOptimizations(packageName)) {
                 Toast.makeText(this, "Разрешение уже предоставлено", Toast.LENGTH_SHORT).show()
             } else {
-                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-                intent.data = Uri.parse("package:$packageName")
+                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                    data = Uri.parse("package:$packageName")
+                }
                 try {
                     startActivity(intent)
                 } catch (e: Exception) {
-                    Toast.makeText(this, "Не удалось открыть настройки батареи", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Откройте настройки вручную", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -82,34 +89,18 @@ class WelcomeActivity : AppCompatActivity() {
         }
     }
 
-    private fun isBatteryOptimizationIgnored(): Boolean {
-        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-        return powerManager.isIgnoringBatteryOptimizations(packageName)
-    }
-
     private fun checkPermissionsAndProceed() {
-        var missingPermissions = false
+        val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+        val batteryOk = pm.isIgnoringBatteryOptimizations(packageName)
+        val notifyOk = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        } else true
 
-        // Проверка уведомлений (Android 13+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                missingPermissions = true
-            }
-        }
-
-        // Проверка батареи
-        if (!isBatteryOptimizationIgnored()) {
-            missingPermissions = true
-        }
-
-        if (missingPermissions) {
+        if (!batteryOk || !notifyOk) {
             MaterialAlertDialogBuilder(this)
-                .setTitle("Не все разрешения выданы")
-                .setMessage("Без разрешений на уведомления и работу в фоне приложение может останавливаться при сворачивании. Вы уверены, что хотите продолжить? В будущем вам придется выдать их вручную через настройки.")
-                .setPositiveButton("ОК (Продолжить)") { dialog, _ ->
-                    dialog.dismiss()
-                    completeSetup()
-                }
+                .setTitle("Разрешения не выданы")
+                .setMessage("Без разрешений на уведомления и работу в фоне приложение может закрываться системой. Продолжить?")
+                .setPositiveButton("ОК") { _, _ -> completeSetup() }
                 .setNegativeButton("Отмена", null)
                 .show()
         } else {
@@ -118,8 +109,7 @@ class WelcomeActivity : AppCompatActivity() {
     }
 
     private fun completeSetup() {
-        val prefs = getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-        prefs.edit().putBoolean("isFirstRun", false).apply()
+        getSharedPreferences("AppPrefs", Context.MODE_PRIVATE).edit().putBoolean("isFirstRun", false).apply()
         goToMain()
     }
 

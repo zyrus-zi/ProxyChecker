@@ -4,7 +4,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/colorSurface"> <!-- ИСПРАВЛЕН ФОН -->
+    android:background="?android:attr/colorBackground">
+
+    <!-- ОБЯЗАТЕЛЬНО: ЭЛЕМЕНТ ДЛЯ ЗВЕЗД -->
+    <com.example.proxychecker.StarFieldView
+        android:id="@+id/starField"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
     <ImageView
         android:id="@+id/ivLogo"
@@ -21,7 +27,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="Proxy Checker"
+        android:text="@string/app_name"
         android:textColor="?attr/colorPrimary"
         android:textSize="28sp"
         android:textStyle="bold"
@@ -35,20 +41,20 @@
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="32dp"
         android:layout_marginTop="16dp"
-        android:text="Для стабильной проверки тысяч прокси в фоновом режиме, приложению требуются разрешения."
+        android:text="@string/welcome_desc"
         android:textAlignment="center"
         android:textSize="16sp"
         app:layout_constraintTop_toBottomOf="@id/tvTitle" />
 
     <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardPerms"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="24dp"
         app:cardBackgroundColor="@android:color/transparent"
         app:cardElevation="0dp"
         app:layout_constraintBottom_toTopOf="@id/btnContinue"
-        app:layout_constraintTop_toBottomOf="@id/tvDesc"
-        tools:layout_editor_absoluteX="24dp">
+        app:layout_constraintTop_toBottomOf="@id/tvDesc">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -61,7 +67,7 @@
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
-                android:text="Разрешить уведомления"
+                android:text="@string/perm_notify"
                 app:icon="@drawable/ic_notifications" />
 
             <com.google.android.material.button.MaterialButton
@@ -70,7 +76,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:layout_marginTop="8dp"
-                android:text="Отключить эконом. батареи"
+                android:text="@string/perm_battery"
                 app:icon="@drawable/ic_battery" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -80,11 +86,10 @@
         android:layout_width="match_parent"
         android:layout_height="60dp"
         android:layout_margin="24dp"
-        android:text="Начать работу"
+        android:text="@string/btn_start_work"
         android:textSize="18sp"
         app:icon="@drawable/ic_rocket"
         app:iconSize="18dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        tools:layout_editor_absoluteX="24dp" />
+        app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

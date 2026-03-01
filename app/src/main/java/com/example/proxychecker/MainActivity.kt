@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -41,6 +42,25 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        val isStarsEnabled = prefs.getBoolean("isStarsEnabled", true)
+        binding.starField.visibility = if (isStarsEnabled) View.VISIBLE else View.GONE
+        if (isStarsEnabled) binding.starField.updateColors()
+
+        binding.btnStarsToggle.setOnClickListener {
+            val current = prefs.getBoolean("isStarsEnabled", true)
+            val newState = !current
+            prefs.edit().putBoolean("isStarsEnabled", newState).apply()
+
+            binding.starField.visibility = if (newState) View.VISIBLE else View.GONE
+            if (newState) binding.starField.updateColors()
+
+            Toast.makeText(this, if (newState) "Эффекты включены" else "Эффекты выключены", Toast.LENGTH_SHORT).show()
+        }
+
+        binding.btnInfo.setOnClickListener {
+            startActivity(Intent(this, AboutActivity::class.java))
+        }
+
         // 2. СКРЫТИЕ СТРОКИ СОСТОЯНИЯ
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
@@ -48,7 +68,7 @@ class MainActivity : AppCompatActivity() {
 
         // Кнопка смены темы
         binding.btnThemeToggle.setOnClickListener {
-            val currentNightMode = prefs.getBoolean("isDarkTheme", false) // Здесь тоже исправлено на false
+            val currentNightMode = prefs.getBoolean("isDarkTheme", false)
             val newMode = !currentNightMode
             prefs.edit().putBoolean("isDarkTheme", newMode).apply()
 
@@ -57,6 +77,9 @@ class MainActivity : AppCompatActivity() {
             } else {
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
             }
+
+            // ПРИНУДИТЕЛЬНО ОБНОВЛЯЕМ ЦВЕТ ЗВЕЗД
+            binding.starField.updateColors()
         }
 
         val protocols = resources.getStringArray(R.array.protocols_array)
@@ -254,18 +277,23 @@ class MainActivity : AppCompatActivity() {
     private fun startPlaneAnimation() {
         if (planeAnimator != null) return
         val plane = binding.ivPlane
-        val translationY = android.animation.ObjectAnimator.ofFloat(plane, "translationY", 0f, -10f, 0f).apply {
+        val translationY = android.animation.ObjectAnimator.ofFloat(plane, "translationY", 0f, -15f, 0f).apply {
             duration = 2000
             repeatCount = android.animation.ValueAnimator.INFINITE
             interpolator = android.view.animation.AccelerateDecelerateInterpolator()
         }
-        val rotation = android.animation.ObjectAnimator.ofFloat(plane, "rotation", 0f, -15f, 0f).apply {
+        val rotation = android.animation.ObjectAnimator.ofFloat(plane, "rotation", 0f, -20f, 0f).apply {
             duration = 1800
             repeatCount = android.animation.ValueAnimator.INFINITE
             interpolator = android.view.animation.LinearInterpolator()
         }
+        val scale = android.animation.ObjectAnimator.ofFloat(plane, "scaleX", 1f, 1.1f, 1f).apply {
+            duration = 1500
+            repeatCount = android.animation.ValueAnimator.INFINITE
+            interpolator = android.view.animation.AccelerateDecelerateInterpolator()
+        }
         planeAnimator = android.animation.AnimatorSet().apply {
-            playTogether(translationY, rotation)
+            playTogether(translationY, rotation, scale)
             start()
         }
     }
@@ -275,6 +303,20 @@ class MainActivity : AppCompatActivity() {
         planeAnimator = null
         binding.ivPlane.rotation = 0f
         binding.ivPlane.translationY = 0f
+        binding.ivPlane.scaleX = 1f
+    }
+
+    private fun animateButtonClick(view: android.view.View) {
+        val scaleX = android.animation.ObjectAnimator.ofFloat(view, "scaleX", 1f, 0.95f, 1f).apply {
+            duration = 200
+        }
+        val scaleY = android.animation.ObjectAnimator.ofFloat(view, "scaleY", 1f, 0.95f, 1f).apply {
+            duration = 200
+        }
+        android.animation.AnimatorSet().apply {
+            playTogether(scaleX, scaleY)
+            start()
+        }
     }
 
     private fun observeManager() {

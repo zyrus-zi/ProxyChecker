@@ -1,5 +1,38 @@
 <resources>
     <string name="app_name">Proxy Checker</string>
+    <string name="toggle_theme">Сменить тему</string>
+    <string name="paste_proxy_or_links">Вставьте прокси или ссылки (GitHub, Telegram)</string>
+    <string name="protocol">Протокол</string>
+    <string name="auto_detect">Автоопределение</string>
+    <string name="threads">Потоки</string>
+    <string name="timeout_ms">Таймаут (мс)</string>
+    <string name="start">СТАРТ</string>
+    <string name="progress_indicator">Индикатор прогресса</string>
+    <string name="checked_0_0">Проверено: 0 / 0</string>
+    <string name="address">Адрес</string>
+    <string name="type_sort">Тип ▼</string>
+    <string name="ping_sort">Пинг ▼</string>
+    <string name="country_sort">Страна ▼</string>
+    <string name="save_txt">Сохранить TXT</string>
+    <string name="tg_links">Ссылки ТГ</string>
+
+    <!-- Для экрана Telegram -->
+    <string name="export_tg_title">Экспорт в Telegram</string>
+    <string name="flag_and_country">Флаг и страна</string>
+    <string name="show_ping">Отображать пинг</string>
+    <string name="group_protocol">Группировать по протоколу</string>
+    <string name="compact_view">Компактный вид</string>
+    <string name="btn_copy">Скопировать</string>
+    <string name="btn_share">Поделиться</string>
+    <string name="btn_to_saved">В Избранное</string>
+
+    <!-- Для экрана Приветствия -->
+    <string name="welcome_title">Добро пожаловать!</string>
+    <string name="welcome_desc">Для стабильной проверки тысяч прокси в фоновом режиме, приложению требуются разрешения.</string>
+    <string name="perm_notify">Разрешить уведомления</string>
+    <string name="perm_battery">Отключить эконом. батареи</string>
+    <string name="btn_start_work">Начать работу</string>
+
     <string-array name="protocols_array">
         <item>Автоопределение</item>
         <item>HTTP</item>
